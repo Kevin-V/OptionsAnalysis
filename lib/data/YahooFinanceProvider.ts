@@ -1,17 +1,20 @@
-import yahooFinance from 'yahoo-finance2'
+import YahooFinance from 'yahoo-finance2'
 import type { IOptionsDataProvider } from './IOptionsDataProvider'
 import type { OptionsChain, OptionContract, SymbolSearchResult } from '@/lib/types'
 
 export class YahooFinanceProvider implements IOptionsDataProvider {
+  private yf = new YahooFinance()
+
   async searchSymbol(query: string): Promise<SymbolSearchResult[]> {
     try {
-      const results = await yahooFinance.search(query)
-      return (results.quotes ?? [])
-        .filter((q): q is typeof q & { symbol: string } => 'symbol' in q && !!q.symbol)
+      const results = await this.yf.search(query) as any
+      const quotes = results?.quotes ?? []
+      return quotes
+        .filter((q: any) => q?.symbol)
         .slice(0, 8)
-        .map(q => ({
+        .map((q: any) => ({
           symbol: q.symbol,
-          name: ('longname' in q ? q.longname : undefined) ?? ('shortname' in q ? q.shortname : undefined) ?? q.symbol,
+          name: q.longname ?? q.shortname ?? q.symbol,
         }))
     } catch {
       return []
@@ -20,8 +23,8 @@ export class YahooFinanceProvider implements IOptionsDataProvider {
 
   async getChain(symbol: string): Promise<OptionsChain> {
     const [quote, optionsData] = await Promise.all([
-      yahooFinance.quote(symbol),
-      yahooFinance.options(symbol),
+      this.yf.quote(symbol) as any,
+      this.yf.options(symbol) as any,
     ])
 
     if (!quote || !quote.regularMarketPrice) {
