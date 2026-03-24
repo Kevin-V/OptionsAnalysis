@@ -14,7 +14,7 @@ export function StrategyCard({ strategy, symbol, underlyingPrice, ivRank, experi
   const [expanded, setExpanded] = useState(false)
   const [explanation, setExplanation] = useState<ExplainResponse | null>(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleExpand() {
     if (expanded) { setExpanded(false); return }
@@ -22,7 +22,7 @@ export function StrategyCard({ strategy, symbol, underlyingPrice, ivRank, experi
     if (explanation) return
 
     setLoading(true)
-    setError(false)
+    setError(null)
     try {
       const aiProvider = localStorage.getItem('aiProvider') ?? 'claude'
       const apiKey = aiProvider === 'gemini'
@@ -30,7 +30,7 @@ export function StrategyCard({ strategy, symbol, underlyingPrice, ivRank, experi
         : localStorage.getItem('anthropicApiKey') ?? ''
 
       if (!apiKey) {
-        setError(true)
+        setError('No API key found. Click the gear icon (top-right) to add your API key.')
         setLoading(false)
         return
       }
@@ -44,11 +44,15 @@ export function StrategyCard({ strategy, symbol, underlyingPrice, ivRank, experi
         },
         body: JSON.stringify({ symbol, underlyingPrice, ivRank, strategy, experienceLevel }),
       })
-      if (!res.ok) throw new Error()
       const data = await res.json()
+      if (!res.ok) {
+        setError(data.error ?? 'Explanation failed')
+        setLoading(false)
+        return
+      }
       setExplanation(data)
-    } catch {
-      setError(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Explanation unavailable')
     } finally {
       setLoading(false)
     }
@@ -100,7 +104,7 @@ export function StrategyCard({ strategy, symbol, underlyingPrice, ivRank, experi
       {expanded && (
         <div className="mt-3 rounded-lg bg-gray-50 p-4 text-sm">
           {loading && <p className="text-gray-500">Loading explanation...</p>}
-          {error && <p className="text-gray-400 italic">Explanation unavailable — check your API key in Settings (top-right gear icon)</p>}
+          {error && <p className="text-red-500 text-xs">{error}</p>}
           {explanation && (
             <>
               <p className="text-gray-700">{explanation.explanation}</p>
