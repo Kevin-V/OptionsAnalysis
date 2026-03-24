@@ -27,7 +27,8 @@ export async function POST(request: NextRequest) {
     const result = await provider.explain(body)
     return NextResponse.json(result)
   } catch (error) {
-    console.error('AI explain error:', error)
-    return NextResponse.json({ error: 'Explanation unavailable' }, { status: 503 })
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('AI explain error:', message)
+    return NextResponse.json({ error: `Explanation failed: ${message}` }, { status: 503 })
   }
 }

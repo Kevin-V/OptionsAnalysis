@@ -19,13 +19,16 @@ export class ClaudeProvider implements IAIProvider {
     const { symbol, underlyingPrice, ivRank, strategy, experienceLevel } = request
     const levelInstruction = LEVEL_INSTRUCTIONS[experienceLevel]
 
+    const pop = Number(strategy.probabilityOfProfit) || 50
+    const breakEvens = (strategy.breakEvenPrices ?? []).map(p => '$' + Number(p).toFixed(2)).join(' / ')
+
     const prompt = `You are an options trading educator. A user is looking at ${symbol} (price: $${underlyingPrice}, IV Rank: ${ivRank}/100).
 
 The rules engine recommends: **${strategy.strategy.name}**
 Matched signals: ${strategy.matchedSignals.join(', ')}
 Confidence: ${strategy.confidenceScore}/100
-Probability of profit: ${strategy.probabilityOfProfit.toFixed(1)}%
-Break-even price(s): ${strategy.breakEvenPrices.map(p => '$' + p.toFixed(2)).join(' / ')}
+Probability of profit: ${pop.toFixed(1)}%
+Break-even price(s): ${breakEvens}
 
 ${levelInstruction}
 
