@@ -30,9 +30,9 @@ describe('StrategyCard', () => {
     expect(screen.getByText(/\$170\.50/)).toBeInTheDocument()
   })
 
-  it('shows explanation section on expand click', () => {
+  it('shows error when no API key on expand click', () => {
     render(<StrategyCard strategy={mockStrategy} symbol="AAPL" underlyingPrice={175} ivRank={70} experienceLevel="beginner" />)
     fireEvent.click(screen.getByText(/Why this strategy/i))
-    expect(screen.getByText(/Loading explanation/i)).toBeInTheDocument()
+    expect(screen.getByText(/Explanation unavailable/i)).toBeInTheDocument()
   })
 })

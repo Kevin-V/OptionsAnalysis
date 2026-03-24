@@ -4,6 +4,7 @@ import { SearchBar } from '@/components/SearchBar'
 import { ExperienceToggle } from '@/components/ExperienceToggle'
 import { ChainSummary } from '@/components/ChainSummary'
 import { StrategyCard } from '@/components/StrategyCard'
+import { SettingsPanel } from '@/components/SettingsPanel'
 import type { ExperienceLevel, RankedStrategy } from '@/lib/types'
 
 interface AnalysisResult {
@@ -20,6 +21,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<AnalysisResult | null>(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('experienceLevel') as ExperienceLevel | null
@@ -56,6 +58,22 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-3xl px-4 py-12">
+        {/* Settings gear icon */}
+        <div className="flex justify-end mb-2">
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="rounded-lg p-2 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+            title="Settings — add your API key"
+          >
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+        </div>
+
+        <SettingsPanel isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+
         <div className="mb-10 text-center">
           <h1 className="text-4xl font-bold text-gray-900">Options Strategy Analyzer</h1>
           <p className="mt-3 text-lg text-gray-500">

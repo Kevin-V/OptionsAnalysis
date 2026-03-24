@@ -9,7 +9,11 @@ const LEVEL_INSTRUCTIONS = {
 }
 
 export class ClaudeProvider implements IAIProvider {
-  private client = new Anthropic()
+  private client: Anthropic
+
+  constructor(apiKey?: string) {
+    this.client = new Anthropic({ apiKey: apiKey || process.env.ANTHROPIC_API_KEY })
+  }
 
   async explain(request: ExplainRequest): Promise<ExplainResponse> {
     const { symbol, underlyingPrice, ivRank, strategy, experienceLevel } = request

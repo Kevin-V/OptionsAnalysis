@@ -2,13 +2,13 @@ import { ClaudeProvider } from './ClaudeProvider'
 import { GeminiProvider } from './GeminiProvider'
 import type { IAIProvider } from './IAIProvider'
 
-export function getAIProvider(): IAIProvider {
-  const provider = process.env.AI_PROVIDER ?? 'claude'
-  switch (provider) {
-    case 'gemini': return new GeminiProvider()
+export function getAIProvider(provider?: string, apiKey?: string): IAIProvider {
+  const selected = provider ?? process.env.AI_PROVIDER ?? 'claude'
+  switch (selected) {
+    case 'gemini': return new GeminiProvider(apiKey)
     case 'claude':
     default:
-      return new ClaudeProvider()
+      return new ClaudeProvider(apiKey)
   }
 }
 

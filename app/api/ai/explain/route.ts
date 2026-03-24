@@ -3,6 +3,13 @@ import { getAIProvider } from '@/lib/ai'
 import type { ExplainRequest } from '@/lib/types'
 
 export async function POST(request: NextRequest) {
+  const aiProvider = request.headers.get('x-ai-provider') ?? process.env.AI_PROVIDER ?? 'claude'
+  const apiKey = request.headers.get('x-api-key') ?? ''
+
+  if (!apiKey) {
+    return NextResponse.json({ error: 'API key is required. Add it in Settings.' }, { status: 401 })
+  }
+
   let body: ExplainRequest
 
   try {
@@ -16,7 +23,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const provider = getAIProvider()
+    const provider = getAIProvider(aiProvider, apiKey)
     const result = await provider.explain(body)
     return NextResponse.json(result)
   } catch (error) {

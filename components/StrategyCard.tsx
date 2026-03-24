@@ -24,9 +24,24 @@ export function StrategyCard({ strategy, symbol, underlyingPrice, ivRank, experi
     setLoading(true)
     setError(false)
     try {
+      const aiProvider = localStorage.getItem('aiProvider') ?? 'claude'
+      const apiKey = aiProvider === 'gemini'
+        ? localStorage.getItem('geminiApiKey') ?? ''
+        : localStorage.getItem('anthropicApiKey') ?? ''
+
+      if (!apiKey) {
+        setError(true)
+        setLoading(false)
+        return
+      }
+
       const res = await fetch('/api/ai/explain', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-ai-provider': aiProvider,
+          'x-api-key': apiKey,
+        },
         body: JSON.stringify({ symbol, underlyingPrice, ivRank, strategy, experienceLevel }),
       })
       if (!res.ok) throw new Error()
@@ -85,7 +100,7 @@ export function StrategyCard({ strategy, symbol, underlyingPrice, ivRank, experi
       {expanded && (
         <div className="mt-3 rounded-lg bg-gray-50 p-4 text-sm">
           {loading && <p className="text-gray-500">Loading explanation...</p>}
-          {error && <p className="text-gray-400 italic">Explanation unavailable</p>}
+          {error && <p className="text-gray-400 italic">Explanation unavailable — check your API key in Settings (top-right gear icon)</p>}
           {explanation && (
             <>
               <p className="text-gray-700">{explanation.explanation}</p>

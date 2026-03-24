@@ -9,7 +9,11 @@ const LEVEL_INSTRUCTIONS = {
 }
 
 export class GeminiProvider implements IAIProvider {
-  private client = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY ?? '')
+  private client: GoogleGenerativeAI
+
+  constructor(apiKey?: string) {
+    this.client = new GoogleGenerativeAI(apiKey || (process.env.GOOGLE_GEMINI_API_KEY ?? ''))
+  }
 
   async explain(request: ExplainRequest): Promise<ExplainResponse> {
     const { symbol, underlyingPrice, ivRank, strategy, experienceLevel } = request
