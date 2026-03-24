@@ -54,12 +54,23 @@ export interface StrategyDefinition {
   minExperienceLevel: ExperienceLevel
 }
 
+export interface StrategyLeg {
+  type: 'call' | 'put' | 'stock'
+  action: 'buy' | 'sell'
+  strike: number
+  expiry: string
+  premium: number              // mid-price per share
+  quantity: number             // number of contracts (or 100 for stock)
+}
+
 export interface RankedStrategy {
   strategy: StrategyDefinition
   confidenceScore: number       // 0–100
   matchedSignals: string[]
   probabilityOfProfit: number   // 0–100 (%)
   breakEvenPrices: number[]     // one price for simple strategies, two for iron condor
+  legs: StrategyLeg[]           // selected option legs
+  netCreditDebit: number        // positive = credit, negative = debit (per share)
 }
 
 export interface ExplainRequest {

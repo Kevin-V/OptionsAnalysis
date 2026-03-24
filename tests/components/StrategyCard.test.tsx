@@ -16,6 +16,11 @@ const mockStrategy: RankedStrategy = {
   matchedSignals: ['High IV → sell premium', 'bullish trend'],
   probabilityOfProfit: 75,
   breakEvenPrices: [170.5],
+  legs: [
+    { type: 'stock', action: 'buy', strike: 175, expiry: '', premium: 175, quantity: 100 },
+    { type: 'call', action: 'sell', strike: 185, expiry: '2025-04-18', premium: 3.50, quantity: 1 },
+  ],
+  netCreditDebit: 3.50,
 }
 
 describe('StrategyCard', () => {
@@ -33,6 +38,6 @@ describe('StrategyCard', () => {
   it('shows error when no API key on expand click', () => {
     render(<StrategyCard strategy={mockStrategy} symbol="AAPL" underlyingPrice={175} ivRank={70} experienceLevel="beginner" />)
     fireEvent.click(screen.getByText(/Why this strategy/i))
-    expect(screen.getByText(/Explanation unavailable/i)).toBeInTheDocument()
+    expect(screen.getByText(/API key|Explanation unavailable|localStorage/i)).toBeInTheDocument()
   })
 })

@@ -12,8 +12,10 @@ export function SearchBar({ onSelect, loading }: Props) {
   const [results, setResults] = useState<SymbolSearchResult[]>([])
   const [showDropdown, setShowDropdown] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const selectedRef = useRef(false)
 
   useEffect(() => {
+    if (selectedRef.current) { selectedRef.current = false; return }
     if (query.length < 1) { setResults([]); return }
 
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -26,7 +28,9 @@ export function SearchBar({ onSelect, loading }: Props) {
   }, [query])
 
   function handleSelect(symbol: string) {
+    selectedRef.current = true
     setQuery(symbol)
+    setResults([])
     setShowDropdown(false)
     onSelect(symbol)
   }

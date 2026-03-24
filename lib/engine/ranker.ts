@@ -1,6 +1,7 @@
 import type { OptionsChain, ChainSignals, RankedStrategy, ExperienceLevel } from '@/lib/types'
 import { STRATEGIES } from './strategies'
 import { probabilityOfProfit, breakEvenPrices } from './calculator'
+import { selectLegs } from './legSelector'
 
 const LEVEL_ORDER: ExperienceLevel[] = ['beginner', 'intermediate', 'advanced']
 
@@ -46,14 +47,15 @@ export function rankStrategies(
       const maxPossible = strategy.weight * 1.8
       const confidenceScore = Math.min(100, Math.round((score / maxPossible) * 100))
 
-      const placeholderContracts = chain.contracts.length > 0 ? chain.contracts.slice(0, 2) : []
+      const legSelection = selectLegs(strategy.id, chain.contracts, chain.underlyingPrice)
 
-      const pop = placeholderContracts.length > 0
-        ? probabilityOfProfit(strategy.id, placeholderContracts)
+      const selectedContracts = legSelection?.contracts ?? []
+      const pop = selectedContracts.length > 0
+        ? probabilityOfProfit(strategy.id, selectedContracts)
         : 50
 
-      const bePs = placeholderContracts.length > 0
-        ? breakEvenPrices(strategy.id, placeholderContracts)
+      const bePs = selectedContracts.length > 0
+        ? breakEvenPrices(strategy.id, selectedContracts)
         : [chain.underlyingPrice]
 
       return {
@@ -62,6 +64,8 @@ export function rankStrategies(
         matchedSignals: matchedSignals.length > 0 ? matchedSignals : ['General market fit'],
         probabilityOfProfit: pop,
         breakEvenPrices: bePs,
+        legs: legSelection?.legs ?? [],
+        netCreditDebit: legSelection?.netCreditDebit ?? 0,
       } as RankedStrategy
     })
     .filter(r => r.confidenceScore > 0)

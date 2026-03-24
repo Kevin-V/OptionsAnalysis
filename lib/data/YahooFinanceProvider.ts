@@ -21,10 +21,11 @@ export class YahooFinanceProvider implements IOptionsDataProvider {
     }
   }
 
-  async getChain(symbol: string): Promise<OptionsChain> {
+  async getChain(symbol: string, expiryDate?: string): Promise<OptionsChain> {
+    const optionsOpts = expiryDate ? { date: new Date(expiryDate) } : undefined
     const [quote, optionsData] = await Promise.all([
       this.yf.quote(symbol) as any,
-      this.yf.options(symbol) as any,
+      (this.yf.options as any)(symbol, optionsOpts),
     ])
 
     if (!quote || !quote.regularMarketPrice) {
@@ -41,12 +42,13 @@ export class YahooFinanceProvider implements IOptionsDataProvider {
       expiryDates.push(expiryStr)
     }
 
+    const selectedExpiry = expiryDate ?? expiryDates[0] ?? ''
     const optionChain = optionsData.options?.[0]
     if (optionChain) {
       for (const call of optionChain.calls ?? []) {
         contracts.push({
           strike: call.strike ?? 0,
-          expiry: expiryDates[0] ?? '',
+          expiry: selectedExpiry,
           type: 'call',
           bid: call.bid ?? 0,
           ask: call.ask ?? 0,
@@ -63,7 +65,7 @@ export class YahooFinanceProvider implements IOptionsDataProvider {
       for (const put of optionChain.puts ?? []) {
         contracts.push({
           strike: put.strike ?? 0,
-          expiry: expiryDates[0] ?? '',
+          expiry: selectedExpiry,
           type: 'put',
           bid: put.bid ?? 0,
           ask: put.ask ?? 0,

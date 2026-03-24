@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { SearchBar } from '@/components/SearchBar'
 import { ExperienceToggle } from '@/components/ExperienceToggle'
+import { ExpirySelector } from '@/components/ExpirySelector'
 import { ChainSummary } from '@/components/ChainSummary'
 import { StrategyCard } from '@/components/StrategyCard'
 import { SettingsPanel } from '@/components/SettingsPanel'
@@ -22,6 +23,8 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [selectedExpiry, setSelectedExpiry] = useState<string>('')
+  const [currentSymbol, setCurrentSymbol] = useState<string>('')
 
   useEffect(() => {
     const saved = localStorage.getItem('experienceLevel') as ExperienceLevel | null
@@ -33,13 +36,17 @@ export default function Home() {
     localStorage.setItem('experienceLevel', level)
   }
 
-  async function handleAnalyze(symbol: string) {
+  async function handleAnalyze(symbol: string, expiry?: string) {
     setLoading(true)
     setError(null)
     setResult(null)
+    setCurrentSymbol(symbol)
 
     try {
-      const res = await fetch(`/api/options/chain?symbol=${encodeURIComponent(symbol)}&level=${experienceLevel}`)
+      let url = `/api/options/chain?symbol=${encodeURIComponent(symbol)}&level=${experienceLevel}`
+      if (expiry) url += `&expiry=${encodeURIComponent(expiry)}`
+
+      const res = await fetch(url)
       const data = await res.json()
 
       if (!res.ok) {
@@ -47,12 +54,35 @@ export default function Home() {
         return
       }
 
+      // Default to an expiry ~30 days out for meaningful premiums
+      if (!expiry && data.expiryDates?.length > 0) {
+        const now = Date.now()
+        const target = now + 30 * 24 * 60 * 60 * 1000
+        const dates: string[] = data.expiryDates
+        const best = dates.reduce((pick, d) => {
+          return Math.abs(new Date(d + 'T12:00:00').getTime() - target) < Math.abs(new Date(pick + 'T12:00:00').getTime() - target) ? d : pick
+        })
+        setSelectedExpiry(best)
+        // Re-fetch with the better expiry (must be an exact date from the list)
+        const reUrl = `/api/options/chain?symbol=${encodeURIComponent(symbol)}&level=${experienceLevel}&expiry=${encodeURIComponent(best)}`
+        const reRes = await fetch(reUrl)
+        const reData = await reRes.json()
+        if (reRes.ok) {
+          setResult(reData)
+          return
+        }
+      }
       setResult(data)
     } catch {
       setError('Unable to fetch options data. Please try again.')
     } finally {
       setLoading(false)
     }
+  }
+
+  function handleExpiryChange(expiry: string) {
+    setSelectedExpiry(expiry)
+    if (currentSymbol) handleAnalyze(currentSymbol, expiry)
   }
 
   return (
@@ -107,6 +137,17 @@ export default function Home() {
               putCallRatio={result.putCallRatio}
               expiryDates={result.expiryDates}
             />
+
+            {result.expiryDates.length > 0 && (
+              <div className="mt-4">
+                <ExpirySelector
+                  expiryDates={result.expiryDates}
+                  selected={selectedExpiry}
+                  onChange={handleExpiryChange}
+                />
+              </div>
+            )}
+
             <h2 className="mt-6 text-lg font-semibold text-gray-900">Suggested Strategies</h2>
             {result.topStrategies.length === 0 ? (
               <p className="text-gray-500">No matching strategies found for current market conditions.</p>

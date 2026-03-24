@@ -19,7 +19,7 @@ export class GeminiProvider implements IAIProvider {
     const { symbol, underlyingPrice, ivRank, strategy, experienceLevel } = request
     const levelInstruction = LEVEL_INSTRUCTIONS[experienceLevel]
 
-    const model = this.client.getGenerativeModel({ model: 'gemini-2.0-flash' })
+    const model = this.client.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
     const pop = Number(strategy.probabilityOfProfit) || 50
     const breakEvens = (strategy.breakEvenPrices ?? []).map(p => '$' + Number(p).toFixed(2)).join(' / ')

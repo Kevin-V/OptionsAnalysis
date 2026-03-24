@@ -12,10 +12,11 @@ export async function GET(request: NextRequest) {
 
   const experienceLevel = (request.nextUrl.searchParams.get('level') ?? 'beginner') as
     'beginner' | 'intermediate' | 'advanced'
+  const expiry = request.nextUrl.searchParams.get('expiry') ?? undefined
 
   try {
     const provider = getDataProvider()
-    const chain = await provider.getChain(symbol.toUpperCase())
+    const chain = await provider.getChain(symbol.toUpperCase(), expiry)
     const signals = computeSignals(chain)
     const topStrategies = rankStrategies(chain, signals, experienceLevel)
 

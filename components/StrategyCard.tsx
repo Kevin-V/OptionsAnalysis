@@ -80,6 +80,39 @@ export function StrategyCard({ strategy, symbol, underlyingPrice, ivRank, experi
         ))}
       </div>
 
+      {strategy.legs && strategy.legs.length > 0 && (
+        <div className="mt-4 border-t border-gray-100 pt-4">
+          <p className="text-xs font-medium text-gray-500 mb-2">Trade Setup</p>
+          <div className="space-y-1.5">
+            {strategy.legs.map((leg, i) => (
+              <div key={i} className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-xs font-medium ${
+                    leg.action === 'buy' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                  }`}>
+                    {leg.action.toUpperCase()}
+                  </span>
+                  <span className="text-gray-700">
+                    {leg.type === 'stock' ? '100 shares' : `${leg.quantity > 1 ? leg.quantity + 'x ' : ''}$${leg.strike.toFixed(0)} ${leg.type}`}
+                  </span>
+                </div>
+                <span className="text-gray-500 tabular-nums">
+                  ${leg.premium.toFixed(2)}{leg.type !== 'stock' ? '/share' : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-2 flex items-center justify-between border-t border-dashed border-gray-200 pt-2">
+            <span className="text-xs font-medium text-gray-500">
+              {strategy.netCreditDebit >= 0 ? 'Net Credit' : 'Net Debit'}
+            </span>
+            <span className={`text-sm font-bold ${strategy.netCreditDebit >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+              ${Math.abs(strategy.netCreditDebit).toFixed(2)}/share (${(Math.abs(strategy.netCreditDebit) * 100).toFixed(0)} total)
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 grid grid-cols-2 gap-4 border-t border-gray-100 pt-4">
         <div>
           <p className="text-xs text-gray-500">Probability of Profit</p>
