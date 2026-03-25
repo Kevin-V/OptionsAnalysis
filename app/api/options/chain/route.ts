@@ -34,6 +34,9 @@ export async function GET(request: NextRequest) {
       ivRank: chain.ivRank,
       putCallRatio: chain.putCallRatio,
       expiryDates: chain.expiryDates,
+      earningsDate: chain.earningsDate,
+      dividendDate: chain.dividendDate,
+      dividendYield: chain.dividendYield,
       signals,
       topStrategies,
     })

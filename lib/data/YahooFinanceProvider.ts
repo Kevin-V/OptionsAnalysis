@@ -34,6 +34,23 @@ export class YahooFinanceProvider implements IOptionsDataProvider {
 
     const underlyingPrice = quote.regularMarketPrice
 
+    // Extract earnings and dividend dates from quote
+    let earningsDate: string | undefined
+    const earningsTs = quote.earningsTimestamp ?? quote.earningsTimestampStart
+    if (earningsTs) {
+      const d = earningsTs instanceof Date ? earningsTs : new Date(earningsTs * 1000)
+      if (!isNaN(d.getTime())) earningsDate = d.toISOString().split('T')[0]
+    }
+
+    let dividendDate: string | undefined
+    const divDate = quote.dividendDate
+    if (divDate) {
+      const d = divDate instanceof Date ? divDate : new Date(divDate * 1000)
+      if (!isNaN(d.getTime())) dividendDate = d.toISOString().split('T')[0]
+    }
+
+    const dividendYield = quote.dividendYield ? quote.dividendYield / 100 : undefined
+
     const contracts: OptionContract[] = []
     const expiryDates: string[] = []
 
@@ -111,6 +128,9 @@ export class YahooFinanceProvider implements IOptionsDataProvider {
       putCallRatio,
       expiryDates,
       contracts,
+      earningsDate,
+      dividendDate,
+      dividendYield,
     }
   }
 }

@@ -24,6 +24,9 @@ export interface OptionsChain {
   putCallRatio: number
   expiryDates: string[]
   contracts: OptionContract[]
+  earningsDate?: string    // ISO date of next earnings
+  dividendDate?: string    // ISO date of next ex-dividend
+  dividendYield?: number   // annual dividend yield as decimal (e.g. 0.025 = 2.5%)
 }
 
 export interface SymbolSearchResult {

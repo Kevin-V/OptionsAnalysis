@@ -15,6 +15,9 @@ interface AnalysisResult {
   ivRank: number
   putCallRatio: number
   expiryDates: string[]
+  earningsDate?: string
+  dividendDate?: string
+  dividendYield?: number
   topStrategies: RankedStrategy[]
 }
 
@@ -172,6 +175,9 @@ export default function Home() {
               ivRank={result.ivRank}
               putCallRatio={result.putCallRatio}
               expiryDates={result.expiryDates}
+              earningsDate={result.earningsDate}
+              dividendDate={result.dividendDate}
+              dividendYield={result.dividendYield}
             />
 
             <div className="mt-4 flex flex-wrap items-center gap-4">

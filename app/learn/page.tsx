@@ -778,17 +778,17 @@ export default function LearnPage() {
           >
             <option value="all">All Strategies</option>
             <optgroup label="Beginner">
-              {STRATEGIES.filter(s => STRATEGY_LEVELS[s.id] === 'beginner').map(s => (
+              {STRATEGIES.filter(s => STRATEGY_LEVELS[s.id] === 'beginner').sort((a, b) => a.name.localeCompare(b.name)).map(s => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </optgroup>
             <optgroup label="Intermediate">
-              {STRATEGIES.filter(s => STRATEGY_LEVELS[s.id] === 'intermediate').map(s => (
+              {STRATEGIES.filter(s => STRATEGY_LEVELS[s.id] === 'intermediate').sort((a, b) => a.name.localeCompare(b.name)).map(s => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </optgroup>
             <optgroup label="Advanced">
-              {STRATEGIES.filter(s => STRATEGY_LEVELS[s.id] === 'advanced').map(s => (
+              {STRATEGIES.filter(s => STRATEGY_LEVELS[s.id] === 'advanced').sort((a, b) => a.name.localeCompare(b.name)).map(s => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </optgroup>
