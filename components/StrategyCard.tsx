@@ -66,15 +66,29 @@ export function StrategyCard({ strategy, symbol, underlyingPrice, ivRank, experi
           <p className="mt-1 text-sm text-gray-500">{strategy.strategy.description}</p>
         </div>
         <div className="ml-4 flex-shrink-0">
-          <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
+          <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${
+            strategy.confidenceScore >= 50
+              ? 'bg-blue-50 text-blue-700'
+              : strategy.confidenceScore > 0
+              ? 'bg-yellow-50 text-yellow-700'
+              : 'bg-red-50 text-red-700'
+          }`}>
             {strategy.confidenceScore}% match
           </span>
         </div>
       </div>
 
+      {strategy.confidenceScore <= 20 && (
+        <div className="mt-3 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
+          This strategy doesn&apos;t strongly match current market conditions. Consider auto-suggest for better-fitting strategies.
+        </div>
+      )}
+
       <div className="mt-3 flex flex-wrap gap-2">
         {strategy.matchedSignals.map(signal => (
-          <span key={signal} className="rounded-full bg-green-50 px-2.5 py-0.5 text-xs text-green-700">
+          <span key={signal} className={`rounded-full px-2.5 py-0.5 text-xs ${
+            signal === 'General market fit' ? 'bg-gray-100 text-gray-500' : 'bg-green-50 text-green-700'
+          }`}>
             {signal}
           </span>
         ))}

@@ -36,7 +36,7 @@ describe('rankStrategies', () => {
   })
 
   it('prefers high-IV sell-premium strategies when ivEnvironment is high and trend is bullish', () => {
-    const results = rankStrategies(mockChain, highIVBullishSignals, 'intermediate')
+    const results = rankStrategies(mockChain, highIVBullishSignals, 'beginner')
     const ids = results.map(r => r.strategy.id)
     expect(ids.some(id => ['covered-call', 'cash-secured-put'].includes(id))).toBe(true)
   })

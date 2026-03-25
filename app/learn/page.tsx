@@ -2,7 +2,23 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { StrategyFlowDiagram } from '@/components/StrategyFlowDiagram'
-import type { ExperienceLevel } from '@/lib/types'
+// level filter uses string literal, no type import needed
+
+const STRATEGY_LEVELS: Record<string, 'beginner' | 'intermediate' | 'advanced'> = {
+  'covered-call': 'beginner',
+  'cash-secured-put': 'beginner',
+  'long-call': 'beginner',
+  'long-put': 'beginner',
+  'protective-put': 'beginner',
+  'bull-call-spread': 'intermediate',
+  'bear-put-spread': 'intermediate',
+  'calendar-spread': 'intermediate',
+  'diagonal-spread': 'intermediate',
+  'bull-put-spread': 'intermediate',
+  'bear-call-spread': 'intermediate',
+  'iron-condor': 'advanced',
+  'straddle': 'advanced',
+}
 
 const STRATEGIES = [
   {
@@ -468,92 +484,280 @@ const STRATEGIES = [
       ],
     },
   },
+  {
+    id: 'calendar-spread',
+    name: 'Calendar Spread',
+    beginner: {
+      summary: 'Sell a near-term option and buy a longer-term option at the same strike price. You profit from the near-term option decaying faster.',
+      analogy: 'Like subletting your apartment for one month while holding a year-long lease — you collect short-term rent while keeping long-term rights.',
+      when: 'When you expect the stock to stay near a specific price and IV is high (near-term options are expensive).',
+    },
+    intermediate: {
+      greeks: 'Net positive theta (short-term decays faster), long vega (benefits from IV increase in back month), near-neutral delta.',
+      when: 'High IV environment where near-term options are richly priced. Works well around earnings if you sell the pre-earnings expiry and buy post-earnings.',
+      avoid: 'When expecting a large directional move — the position profits most when the stock stays near the strike.',
+    },
+    advanced: {
+      profile: 'Max profit: when stock is at the strike at near-term expiry. Max loss: net debit paid.',
+      adjustments: 'Roll the short leg to the next expiry if near-term expires worthless. Shift strikes if stock moves away.',
+      notes: 'The position benefits from IV skew between expirations. Be aware of early assignment risk on the short leg.',
+    },
+    diagram: {
+      steps: [
+        { step: 1, title: 'Sell Near-Term Option', description: 'Sell a call (or put) that expires soon — typically 2-4 weeks out.', icon: '\uD83D\uDCDD', detail: 'The near-term option decays fastest, which works in your favor.' },
+        { step: 2, title: 'Buy Longer-Term Option', description: 'Buy the same type of option at the same strike, but with a later expiration — typically 6-8 weeks out.', icon: '\uD83D\uDCC5', detail: 'The longer-term option retains more value because it has more time left.' },
+        { step: 3, title: 'Profit from Time Decay Difference', description: 'The near-term option loses value faster than the long-term one. The gap is your profit.', icon: '\u23F3', detail: 'This works best when the stock stays near the strike price.' },
+      ],
+      outcomes: [
+        { label: 'Stock stays near the strike', description: 'Near-term option expires worthless, long-term option retains value. You keep the difference.', color: 'green' as const, pnl: 'Example: +$150 profit' },
+        { label: 'Stock moves far from strike', description: 'Both options gain/lose similarly, erasing the time decay advantage. You may lose the net debit paid.', color: 'red' as const, pnl: 'Example: -$200 loss (net debit)' },
+      ],
+      example: {
+        title: 'Example Trade: AAPL at $175',
+        lines: [
+          'Sell the $175 call expiring in 2 weeks for $2.50/share',
+          'Buy the $175 call expiring in 6 weeks for $4.50/share',
+          'Net debit: ($4.50 - $2.50) x 100 = $200',
+          'If AAPL stays near $175: near-term expires worthless, long-term worth ~$3.50 → profit ~$150',
+          'If AAPL jumps to $195: both options move similarly → small loss or break-even',
+        ],
+      },
+      maxProfit: '~$150 (at strike at near-term expiry)',
+      maxLoss: '$200 (net debit paid)',
+      breakEven: '~$173 / ~$177',
+      riskLevel: 'Medium' as const,
+      keyTerms: [
+        { term: 'Calendar Spread', definition: 'Two options at the same strike but different expirations. Also called a "time spread" or "horizontal spread."' },
+        { term: 'Time Decay (Theta)', definition: 'Near-term options lose value faster than longer-term ones. This difference is how the calendar spread makes money.' },
+        { term: 'Net Debit', definition: 'The cost to enter the trade — the long option costs more than the short one since it has more time.' },
+        { term: 'Rolling', definition: 'When the short leg expires, you can sell another near-term option against your long leg to repeat the process.' },
+      ],
+    },
+  },
+  {
+    id: 'diagonal-spread',
+    name: 'Diagonal Spread (PMCC)',
+    beginner: {
+      summary: 'Buy a deep in-the-money call with a long expiration (LEAP), then sell short-term out-of-the-money calls against it. Like a covered call but using a LEAP instead of 100 shares.',
+      analogy: 'Like buying a long-term lease on a rental property and subletting month-to-month — much less capital tied up than buying the property outright.',
+      when: 'When you\'re bullish on a stock but don\'t want to tie up thousands of dollars buying 100 shares.',
+    },
+    intermediate: {
+      greeks: 'Long delta (bullish exposure), positive theta from short calls, long vega on back month. The deep ITM LEAP acts like stock.',
+      when: 'High IV for the short leg (collect rich premiums) and low IV for the long LEAP. Moderate bullish outlook.',
+      avoid: 'If the stock could drop significantly — the LEAP loses value. Also avoid if the short call strike is too close to the LEAP strike.',
+    },
+    advanced: {
+      profile: 'Max profit: short call premium + (short strike - long strike) if assigned. Max loss: LEAP cost - premiums collected.',
+      adjustments: 'Roll short calls up/out when challenged. If stock drops, pause selling calls and wait for recovery. Buy LEAP with delta > 0.70.',
+      notes: 'The LEAP must have enough extrinsic value that early assignment is unlikely. Keep short strike above LEAP break-even.',
+    },
+    diagram: {
+      steps: [
+        { step: 1, title: 'Buy a LEAP Call', description: 'Buy a deep ITM call option with 6-12+ months until expiration.', icon: '\uD83D\uDCC8', detail: 'Choose delta 0.70-0.80 (deep ITM). This acts as your "stock replacement" at a fraction of the cost.' },
+        { step: 2, title: 'Sell Short-Term Calls', description: 'Sell OTM calls expiring in 2-4 weeks against your LEAP.', icon: '\uD83D\uDCDD', detail: 'Choose a strike ~5% above the current price. You collect premium each cycle.' },
+        { step: 3, title: 'Repeat Monthly', description: 'When the short call expires, sell another one. Rinse and repeat to generate income.', icon: '\uD83D\uDD04', detail: 'Over time, the premiums collected can pay for a significant portion of the LEAP cost.' },
+      ],
+      outcomes: [
+        { label: 'Stock rises slowly / stays flat', description: 'Short calls expire worthless, you keep the premium. LEAP retains value. Ideal scenario.', color: 'green' as const, pnl: 'Example: +$300/month in premiums collected' },
+        { label: 'Stock rises above short strike', description: 'You may need to roll the short call up and out, or close both legs for a profit.', color: 'blue' as const, pnl: 'Example: +$1,500 total profit (capped at short strike)' },
+        { label: 'Stock drops significantly', description: 'LEAP loses value. Short call premiums provide some cushion but won\'t offset a large drop.', color: 'red' as const, pnl: 'Example: -$1,200 (LEAP depreciation minus premiums)' },
+      ],
+      example: {
+        title: 'Example Trade: AAPL at $175',
+        lines: [
+          'Buy the $155 call LEAP (12 months out) for $30.00/share ($3,000)',
+          'Sell the $185 call (30 days out) for $3.00/share ($300)',
+          'Capital required: $3,000 vs $17,500 for 100 shares',
+          'If AAPL stays under $185: keep $300, sell another call next month',
+          'After 6 months of selling calls at ~$300 each: $1,800 collected, LEAP still worth ~$28',
+          'Effective cost reduced from $3,000 to $1,200',
+        ],
+      },
+      maxProfit: '$3,300 per cycle (strike diff + premium)',
+      maxLoss: '$2,700 (LEAP cost - premiums)',
+      breakEven: '$158 (LEAP strike + net cost)',
+      riskLevel: 'Medium' as const,
+      keyTerms: [
+        { term: 'PMCC', definition: 'Poor Man\'s Covered Call — uses a LEAP instead of stock. "Poor man\'s" because it requires much less capital.' },
+        { term: 'LEAP', definition: 'Long-term Equity Anticipation Security — an option with 6-12+ months until expiration.' },
+        { term: 'Deep ITM', definition: 'An option with a strike well below the stock price (for calls). It moves nearly 1:1 with the stock.' },
+        { term: 'Rolling', definition: 'Closing an expiring short call and opening a new one at a later date (and possibly different strike).' },
+      ],
+    },
+  },
+  {
+    id: 'bull-put-spread',
+    name: 'Bull Put Spread',
+    beginner: {
+      summary: 'Sell a put at a higher strike and buy a put at a lower strike. You collect a credit upfront and profit if the stock stays above the short put strike.',
+      analogy: 'Like betting that the floor won\'t collapse — you get paid upfront for your confidence, and you buy insurance (the long put) to limit your downside.',
+      when: 'When you\'re moderately bullish and want to collect premium with defined risk.',
+    },
+    intermediate: {
+      greeks: 'Positive delta (bullish), positive theta (time decay helps), short vega (lower IV helps).',
+      when: 'High IV environment — sell expensive puts. Best when you expect the stock to stay flat or rise moderately.',
+      avoid: 'Before earnings or events that could cause a big drop. Also avoid in low IV environments where credit received is small.',
+    },
+    advanced: {
+      profile: 'Max profit: credit received. Max loss: (strike width - credit) x 100. Break-even: short strike - credit.',
+      adjustments: 'Roll down and out if stock drops toward short strike. Close early at 50-75% of max profit.',
+      notes: 'The credit spread version of a bull call spread. Same directional bet but benefits from time decay instead of fighting it.',
+    },
+    diagram: {
+      steps: [
+        { step: 1, title: 'Sell Higher Strike Put', description: 'Sell a put option slightly below the current stock price. You receive a premium.', icon: '\uD83D\uDCDD', detail: 'This is your main income source. Choose a strike where you\'d be comfortable owning the stock.' },
+        { step: 2, title: 'Buy Lower Strike Put', description: 'Buy a put at a lower strike to cap your downside risk.', icon: '\uD83D\uDEE1\uFE0F', detail: 'This defines your maximum loss. The wider the spread, the more risk but more premium.' },
+        { step: 3, title: 'Collect Net Credit', description: 'The premium received from selling exceeds the cost of buying. The difference is yours to keep if the stock cooperates.', icon: '\uD83D\uDCB0', detail: 'You want both options to expire worthless — that means the stock stayed above your short strike.' },
+      ],
+      outcomes: [
+        { label: 'Stock stays above short strike', description: 'Both puts expire worthless. You keep the entire credit.', color: 'green' as const, pnl: 'Example: +$200 profit (full credit kept)' },
+        { label: 'Stock drops below long strike', description: 'Max loss reached. You lose the spread width minus the credit received.', color: 'red' as const, pnl: 'Example: -$300 loss (spread width - credit)' },
+      ],
+      example: {
+        title: 'Example Trade: AAPL at $175',
+        lines: [
+          'Sell the $170 put for $3.00/share',
+          'Buy the $165 put for $1.00/share',
+          'Net credit: ($3.00 - $1.00) x 100 = $200',
+          'If AAPL stays above $170: keep $200',
+          'If AAPL drops to $160: lose ($5 - $2) x 100 = $300',
+          'Break-even: $170 - $2.00 = $168',
+        ],
+      },
+      maxProfit: '$200 (credit received)',
+      maxLoss: '$300 (spread width - credit)',
+      breakEven: '$168',
+      riskLevel: 'Medium' as const,
+      keyTerms: [
+        { term: 'Credit Spread', definition: 'A spread where you receive money upfront. You want the options to expire worthless so you keep the credit.' },
+        { term: 'Spread Width', definition: 'The difference between the two strikes. A $5 wide spread means your max risk is $500 minus credit received.' },
+        { term: 'Short Put', definition: 'The put you sold (higher strike). This is where your profit comes from but also your risk.' },
+        { term: 'Assignment Risk', definition: 'If the stock drops below your short strike before expiry, you may be assigned (forced to buy shares). Close early to avoid.' },
+      ],
+    },
+  },
+  {
+    id: 'bear-call-spread',
+    name: 'Bear Call Spread',
+    beginner: {
+      summary: 'Sell a call at a lower strike and buy a call at a higher strike. You collect a credit upfront and profit if the stock stays below the short call strike.',
+      analogy: 'Like betting it won\'t rain — you get paid for your prediction, and buy an umbrella (long call) just in case you\'re wrong.',
+      when: 'When you\'re moderately bearish or neutral and want to collect premium with defined risk.',
+    },
+    intermediate: {
+      greeks: 'Negative delta (bearish), positive theta (time decay helps), short vega (lower IV helps).',
+      when: 'High IV environment — sell expensive calls. Works when you expect the stock to stay flat or drop moderately.',
+      avoid: 'Before positive catalysts (earnings beats, product launches) that could send the stock higher.',
+    },
+    advanced: {
+      profile: 'Max profit: credit received. Max loss: (strike width - credit) x 100. Break-even: short strike + credit.',
+      adjustments: 'Roll up and out if stock rises toward short strike. Close early at 50-75% of max profit.',
+      notes: 'The bearish counterpart to the bull put spread. Same mechanics but profits when stock stays below the short strike.',
+    },
+    diagram: {
+      steps: [
+        { step: 1, title: 'Sell Lower Strike Call', description: 'Sell a call option slightly above the current stock price. You receive a premium.', icon: '\uD83D\uDCDD', detail: 'Choose a strike above a resistance level where you think the stock won\'t reach.' },
+        { step: 2, title: 'Buy Higher Strike Call', description: 'Buy a call at a higher strike to cap your upside risk.', icon: '\uD83D\uDEE1\uFE0F', detail: 'This defines your maximum loss. Without it, you\'d have unlimited risk.' },
+        { step: 3, title: 'Collect Net Credit', description: 'The premium from selling exceeds the cost of buying. You keep this credit if the stock stays below the short strike.', icon: '\uD83D\uDCB0', detail: 'You want both options to expire worthless — stock stayed below your short call.' },
+      ],
+      outcomes: [
+        { label: 'Stock stays below short strike', description: 'Both calls expire worthless. You keep the entire credit.', color: 'green' as const, pnl: 'Example: +$180 profit (full credit kept)' },
+        { label: 'Stock rises above long strike', description: 'Max loss reached. You lose the spread width minus the credit received.', color: 'red' as const, pnl: 'Example: -$320 loss (spread width - credit)' },
+      ],
+      example: {
+        title: 'Example Trade: AAPL at $175',
+        lines: [
+          'Sell the $180 call for $2.80/share',
+          'Buy the $185 call for $1.00/share',
+          'Net credit: ($2.80 - $1.00) x 100 = $180',
+          'If AAPL stays below $180: keep $180',
+          'If AAPL rises to $190: lose ($5 - $1.80) x 100 = $320',
+          'Break-even: $180 + $1.80 = $181.80',
+        ],
+      },
+      maxProfit: '$180 (credit received)',
+      maxLoss: '$320 (spread width - credit)',
+      breakEven: '$181.80',
+      riskLevel: 'Medium' as const,
+      keyTerms: [
+        { term: 'Credit Spread', definition: 'A spread where you receive money upfront. You profit when the options expire worthless.' },
+        { term: 'Short Call', definition: 'The call you sold (lower strike). Your profit source but also your risk if the stock rises past it.' },
+        { term: 'Spread Width', definition: 'The difference between strikes ($5 here). Determines max loss: width minus credit.' },
+        { term: 'Resistance Level', definition: 'A price the stock has struggled to break above. Good place to set your short call strike.' },
+      ],
+    },
+  },
 ]
 
-type TabKey = 'beginner' | 'intermediate' | 'advanced'
-
 function StrategySection({ strategy }: { strategy: typeof STRATEGIES[number] }) {
-  const [activeTab, setActiveTab] = useState<TabKey>('beginner')
-
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-      <div className="p-6 pb-0">
-        <h2 className="text-2xl font-bold text-gray-900">{strategy.name}</h2>
-      </div>
-
-      {/* Tab buttons */}
-      <div className="mt-4 flex border-b border-gray-200 px-6">
-        {(['beginner', 'intermediate', 'advanced'] as TabKey[]).map(tab => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`mr-6 border-b-2 pb-3 text-sm font-medium capitalize transition-colors ${
-              activeTab === tab
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
       <div className="p-6">
-        {activeTab === 'beginner' && (
-          <div className="space-y-5">
-            <p className="text-gray-700">{strategy.beginner.summary}</p>
-            <p className="text-gray-500 italic">&ldquo;{strategy.beginner.analogy}&rdquo;</p>
-            <p className="text-sm text-gray-600">
-              <span className="font-medium">Use when:</span> {strategy.beginner.when}
-            </p>
-            <StrategyFlowDiagram
-              strategyName={strategy.name}
-              steps={strategy.diagram.steps}
-              outcomes={strategy.diagram.outcomes}
-              example={strategy.diagram.example}
-              keyTerms={strategy.diagram.keyTerms}
-              maxProfit={strategy.diagram.maxProfit}
-              maxLoss={strategy.diagram.maxLoss}
-              breakEven={strategy.diagram.breakEven}
-              riskLevel={strategy.diagram.riskLevel}
-            />
-          </div>
-        )}
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">{strategy.name}</h2>
 
-        {activeTab === 'intermediate' && (
-          <div className="space-y-3">
-            <p className="text-sm text-gray-700">
-              <span className="font-medium">Greeks:</span> {strategy.intermediate.greeks}
-            </p>
-            <p className="text-sm text-gray-700">
-              <span className="font-medium">Use when:</span> {strategy.intermediate.when}
-            </p>
-            <p className="text-sm text-gray-700">
-              <span className="font-medium">Avoid when:</span> {strategy.intermediate.avoid}
-            </p>
-          </div>
-        )}
+        <p className="text-gray-700">{strategy.beginner.summary}</p>
+        <p className="mt-2 text-gray-500 italic">&ldquo;{strategy.beginner.analogy}&rdquo;</p>
 
-        {activeTab === 'advanced' && (
-          <div className="space-y-3">
-            <p className="text-sm text-gray-700">
-              <span className="font-medium">Profile:</span> {strategy.advanced.profile}
-            </p>
-            <p className="text-sm text-gray-700">
-              <span className="font-medium">Adjustments:</span> {strategy.advanced.adjustments}
-            </p>
-            <p className="text-sm text-gray-700">
-              <span className="font-medium">Notes:</span> {strategy.advanced.notes}
-            </p>
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+          <div className="rounded-lg bg-green-50 p-3">
+            <span className="font-medium text-green-800">Use when:</span>
+            <p className="mt-1 text-green-700">{strategy.beginner.when}</p>
           </div>
-        )}
+          <div className="rounded-lg bg-amber-50 p-3">
+            <span className="font-medium text-amber-800">Avoid when:</span>
+            <p className="mt-1 text-amber-700">{strategy.intermediate.avoid}</p>
+          </div>
+          <div className="rounded-lg bg-blue-50 p-3">
+            <span className="font-medium text-blue-800">Greeks:</span>
+            <p className="mt-1 text-blue-700">{strategy.intermediate.greeks}</p>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-lg bg-gray-50 p-3 text-sm space-y-1">
+          <p className="text-gray-700"><span className="font-medium">Profile:</span> {strategy.advanced.profile}</p>
+          <p className="text-gray-700"><span className="font-medium">Adjustments:</span> {strategy.advanced.adjustments}</p>
+          <p className="text-gray-700"><span className="font-medium">Notes:</span> {strategy.advanced.notes}</p>
+        </div>
+
+        <div className="mt-5">
+          <StrategyFlowDiagram
+            strategyName={strategy.name}
+            steps={strategy.diagram.steps}
+            outcomes={strategy.diagram.outcomes}
+            example={strategy.diagram.example}
+            keyTerms={strategy.diagram.keyTerms}
+            maxProfit={strategy.diagram.maxProfit}
+            maxLoss={strategy.diagram.maxLoss}
+            breakEven={strategy.diagram.breakEven}
+            riskLevel={strategy.diagram.riskLevel}
+          />
+        </div>
       </div>
     </div>
   )
 }
 
+const LEVEL_FILTERS = [
+  { value: 'all', label: 'All Strategies' },
+  { value: 'beginner', label: 'Beginner' },
+  { value: 'intermediate', label: 'Intermediate' },
+  { value: 'advanced', label: 'Advanced' },
+] as const
+
+const LEVEL_BADGE: Record<string, string> = {
+  beginner: 'bg-green-100 text-green-700',
+  intermediate: 'bg-blue-100 text-blue-700',
+  advanced: 'bg-purple-100 text-purple-700',
+}
+
 export default function LearnPage() {
+  const [selectedId, setSelectedId] = useState<string>('all')
+
+  const visible = selectedId === 'all'
+    ? STRATEGIES
+    : STRATEGIES.filter(s => s.id === selectedId)
+
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-3xl px-4 py-12">
@@ -565,9 +769,40 @@ export default function LearnPage() {
           Learn what each strategy is, when to use it, and why &mdash; at every experience level.
         </p>
 
-        <div className="mt-10 space-y-8">
-          {STRATEGIES.map(s => (
-            <StrategySection key={s.id} strategy={s} />
+        {/* Strategy selector */}
+        <div className="mt-6">
+          <select
+            value={selectedId}
+            onChange={e => setSelectedId(e.target.value)}
+            className="rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="all">All Strategies</option>
+            <optgroup label="Beginner">
+              {STRATEGIES.filter(s => STRATEGY_LEVELS[s.id] === 'beginner').map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Intermediate">
+              {STRATEGIES.filter(s => STRATEGY_LEVELS[s.id] === 'intermediate').map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </optgroup>
+            <optgroup label="Advanced">
+              {STRATEGIES.filter(s => STRATEGY_LEVELS[s.id] === 'advanced').map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </optgroup>
+          </select>
+        </div>
+
+        <div className="mt-8 space-y-8">
+          {visible.map(s => (
+            <div key={s.id}>
+              <span className={`mb-2 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${LEVEL_BADGE[STRATEGY_LEVELS[s.id]] ?? ''}`}>
+                {STRATEGY_LEVELS[s.id]?.charAt(0).toUpperCase()}{STRATEGY_LEVELS[s.id]?.slice(1)}
+              </span>
+              <StrategySection strategy={s} />
+            </div>
           ))}
         </div>
       </div>

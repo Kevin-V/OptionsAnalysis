@@ -198,6 +198,73 @@ export function selectLegs(
       }
     }
 
+    case 'bull-put-spread': {
+      // Sell OTM put ~3% below, buy further OTM put ~8% below
+      const shortPut = nearestStrike(puts.filter(c => c.strike < underlyingPrice), underlyingPrice * 0.97)
+      const longPut = nearestStrike(puts.filter(c => c.strike < underlyingPrice * 0.95), underlyingPrice * 0.92)
+      if (!shortPut || !longPut || longPut.strike >= shortPut.strike) return null
+
+      const credit = midPrice(shortPut) - midPrice(longPut)
+      return {
+        legs: [toLeg(shortPut, 'sell'), toLeg(longPut, 'buy')],
+        contracts: [shortPut, longPut],
+        netCreditDebit: credit,
+      }
+    }
+
+    case 'bear-call-spread': {
+      // Sell OTM call ~3% above, buy further OTM call ~8% above
+      const shortCall = nearestStrike(calls.filter(c => c.strike > underlyingPrice), underlyingPrice * 1.03)
+      const longCall = nearestStrike(calls.filter(c => c.strike > underlyingPrice * 1.05), underlyingPrice * 1.08)
+      if (!shortCall || !longCall || shortCall.strike >= longCall.strike) return null
+
+      const credit = midPrice(shortCall) - midPrice(longCall)
+      return {
+        legs: [toLeg(shortCall, 'sell'), toLeg(longCall, 'buy')],
+        contracts: [shortCall, longCall],
+        netCreditDebit: credit,
+      }
+    }
+
+    case 'calendar-spread': {
+      // Sell near-term ATM call, buy longer-term ATM call at same strike
+      // With single-expiry data, approximate by selling ATM and buying next OTM
+      // to show the structure — in practice the long leg would be a later expiry
+      const atmCall = nearestStrike(calls, underlyingPrice)
+      if (!atmCall) return null
+      // Simulate: the longer-dated option costs more (use 1.5x as approximation)
+      const longPremium = midPrice(atmCall) * 1.5
+      const shortPremium = midPrice(atmCall)
+      return {
+        legs: [
+          { type: 'call' as const, action: 'sell' as const, strike: atmCall.strike, expiry: atmCall.expiry, premium: shortPremium, quantity: 1 },
+          { type: 'call' as const, action: 'buy' as const, strike: atmCall.strike, expiry: atmCall.expiry + ' (longer)', premium: longPremium, quantity: 1 },
+        ],
+        contracts: [atmCall],
+        netCreditDebit: -(longPremium - shortPremium),
+      }
+    }
+
+    case 'diagonal-spread': {
+      // PMCC: Buy deep ITM call (LEAP), sell near-term OTM call
+      // Long leg: deep ITM call ~10% below current price
+      // Short leg: OTM call ~5% above current price
+      const deepItm = nearestStrike(calls.filter(c => c.strike < underlyingPrice * 0.92), underlyingPrice * 0.90)
+      const otmCall = nearestStrike(calls.filter(c => c.strike > underlyingPrice), underlyingPrice * 1.05)
+      if (!deepItm || !otmCall) return null
+      // The LEAP would cost more — approximate with 2.5x for time value
+      const leapPremium = midPrice(deepItm) * 2.5
+      const shortPremium = midPrice(otmCall)
+      return {
+        legs: [
+          { type: 'call' as const, action: 'buy' as const, strike: deepItm.strike, expiry: deepItm.expiry + ' (LEAP)', premium: leapPremium, quantity: 1 },
+          { type: 'call' as const, action: 'sell' as const, strike: otmCall.strike, expiry: otmCall.expiry, premium: shortPremium, quantity: 1 },
+        ],
+        contracts: [deepItm, otmCall],
+        netCreditDebit: -(leapPremium - shortPremium),
+      }
+    }
+
     default:
       return null
   }

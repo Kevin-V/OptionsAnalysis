@@ -121,6 +121,35 @@ export function probabilityOfProfit(
       return 25
     }
 
+    case 'bull-put-spread': {
+      // PoP ≈ 1 - |delta of short put|
+      const [shortPutBps] = contracts
+      if (!shortPutBps) return 50
+      const deltaBps = estimateDelta(shortPutBps, price)
+      return Math.round(Math.max(20, Math.min(85, (1 - Math.abs(deltaBps)) * 100)))
+    }
+
+    case 'bear-call-spread': {
+      // PoP ≈ 1 - delta of short call
+      const [shortCallBcs] = contracts
+      if (!shortCallBcs) return 50
+      const deltaBcs = estimateDelta(shortCallBcs, price)
+      return Math.round(Math.max(20, Math.min(85, (1 - Math.abs(deltaBcs)) * 100)))
+    }
+
+    case 'calendar-spread': {
+      // Calendar spreads profit when stock stays near strike; moderate PoP ~45-55%
+      return 50
+    }
+
+    case 'diagonal-spread': {
+      // PMCC has similar PoP to covered call — high because you collect premium
+      const short = contracts[1] // the OTM short call
+      if (!short) return 60
+      const delta = estimateDelta(short, price)
+      return Math.round(Math.max(40, Math.min(85, (1 - Math.abs(delta)) * 100)))
+    }
+
     case 'protective-put': {
       // Very high PoP since you profit if stock goes up at all past premium cost
       const [put] = contracts
@@ -180,6 +209,26 @@ export function breakEvenPrices(strategyId: string, contracts: OptionContract[])
         call.strike - totalPremium,
         call.strike + totalPremium,
       ]
+    }
+    case 'bull-put-spread': {
+      const [shortPut, longPut] = contracts
+      const credit = midPrice(shortPut) - midPrice(longPut)
+      return [shortPut.strike - credit]
+    }
+    case 'bear-call-spread': {
+      const [shortCall, longCall] = contracts
+      const credit = midPrice(shortCall) - midPrice(longCall)
+      return [shortCall.strike + credit]
+    }
+    case 'calendar-spread': {
+      const [call] = contracts
+      return [call.strike]
+    }
+    case 'diagonal-spread': {
+      const [longCall, shortCall] = contracts
+      // Break-even ≈ long call strike + net debit paid
+      const netDebit = midPrice(longCall) * 2.5 - midPrice(shortCall)
+      return [longCall.strike + netDebit]
     }
     default:
       return [contracts[0]?.strike ?? 0]
