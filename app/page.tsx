@@ -36,6 +36,27 @@ export default function Home() {
   function handleLevelChange(level: ExperienceLevel) {
     setExperienceLevel(level)
     localStorage.setItem('experienceLevel', level)
+    if (currentSymbol) {
+      // Re-analyze with the new level — need to pass level directly since state update is async
+      reAnalyzeWithLevel(level)
+    }
+  }
+
+  async function reAnalyzeWithLevel(level: ExperienceLevel) {
+    setLoading(true)
+    setError(null)
+    try {
+      let url = `/api/options/chain?symbol=${encodeURIComponent(currentSymbol)}&level=${level}`
+      if (selectedExpiry) url += `&expiry=${encodeURIComponent(selectedExpiry)}`
+      if (selectedStrategy) url += `&strategy=${encodeURIComponent(selectedStrategy)}`
+      const res = await fetch(url)
+      const data = await res.json()
+      if (res.ok) setResult(data)
+    } catch {
+      // keep existing results on error
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleAnalyze(symbol: string, expiry?: string, strategy?: string) {

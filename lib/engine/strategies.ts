@@ -7,7 +7,7 @@ export const STRATEGIES: StrategyDefinition[] = [
     description: 'Own stock, sell an OTM call. Generates income in sideways to mildly bullish markets.',
     signals: { ivEnvironment: 'high', trend: 'bullish' },
     weight: 10,
-    minExperienceLevel: 'beginner',
+    minExperienceLevel: 'intermediate',
   },
   {
     id: 'cash-secured-put',
@@ -15,7 +15,7 @@ export const STRATEGIES: StrategyDefinition[] = [
     description: 'Sell an OTM put backed by cash. Good for acquiring stock at a discount while collecting premium.',
     signals: { ivEnvironment: 'high', trend: 'bullish' },
     weight: 9,
-    minExperienceLevel: 'beginner',
+    minExperienceLevel: 'intermediate',
   },
   {
     id: 'iron-condor',
@@ -23,7 +23,7 @@ export const STRATEGIES: StrategyDefinition[] = [
     description: 'Sell OTM call spread + OTM put spread. Profits when the stock stays in a range.',
     signals: { ivEnvironment: 'high', trend: 'neutral' },
     weight: 10,
-    minExperienceLevel: 'intermediate',
+    minExperienceLevel: 'advanced',
   },
   {
     id: 'bull-call-spread',
@@ -31,7 +31,7 @@ export const STRATEGIES: StrategyDefinition[] = [
     description: 'Buy a lower strike call, sell a higher strike call. Defined-risk bullish bet.',
     signals: { ivEnvironment: 'low', trend: 'bullish' },
     weight: 9,
-    minExperienceLevel: 'beginner',
+    minExperienceLevel: 'intermediate',
   },
   {
     id: 'bear-put-spread',
@@ -39,7 +39,7 @@ export const STRATEGIES: StrategyDefinition[] = [
     description: 'Buy a higher strike put, sell a lower strike put. Defined-risk bearish bet.',
     signals: { ivEnvironment: 'low', trend: 'bearish' },
     weight: 9,
-    minExperienceLevel: 'beginner',
+    minExperienceLevel: 'intermediate',
   },
   {
     id: 'long-call',
@@ -63,7 +63,7 @@ export const STRATEGIES: StrategyDefinition[] = [
     description: 'Buy one ITM, sell two ATM, buy one OTM call/put. Profits if stock stays near current price.',
     signals: { ivEnvironment: 'neutral', trend: 'neutral' },
     weight: 8,
-    minExperienceLevel: 'intermediate',
+    minExperienceLevel: 'advanced',
   },
   {
     id: 'protective-put',
@@ -79,6 +79,6 @@ export const STRATEGIES: StrategyDefinition[] = [
     description: 'Buy an ATM call and ATM put. Profits from a big move in either direction.',
     signals: { ivEnvironment: 'low', trend: 'neutral' },
     weight: 7,
-    minExperienceLevel: 'intermediate',
+    minExperienceLevel: 'advanced',
   },
 ]
