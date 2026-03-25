@@ -5,16 +5,28 @@ function midPrice(contract: OptionContract): number {
 }
 
 /**
+ * Calculate days to expiry from an ISO date string, minimum 1 day.
+ */
+function daysToExpiry(expiry: string): number {
+  if (!expiry) return 30
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  const exp = new Date(expiry + 'T16:00:00') // market close
+  const days = Math.round((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  return Math.max(1, days)
+}
+
+/**
  * Approximate delta using a simplified Black-Scholes approach.
  * When Yahoo doesn't provide Greeks (delta=0 or undefined), we estimate
- * using the moneyness ratio and IV.
+ * using the moneyness ratio, IV, and actual days to expiry.
  */
 function estimateDelta(contract: OptionContract, underlyingPrice: number): number {
   if (contract.delta && Math.abs(contract.delta) > 0.001) return contract.delta
 
   const iv = contract.impliedVolatility || 0.3
-  // Approximate days to expiry (use 30 as default)
-  const timeYears = 30 / 365
+  const dte = daysToExpiry(contract.expiry)
+  const timeYears = dte / 365
 
   // d1 approximation: ln(S/K) / (IV * sqrt(T)) + 0.5 * IV * sqrt(T)
   const sqrtT = Math.sqrt(timeYears)

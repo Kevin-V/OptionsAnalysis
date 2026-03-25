@@ -9,6 +9,14 @@ import { StrategyCard } from '@/components/StrategyCard'
 import { SettingsPanel } from '@/components/SettingsPanel'
 import type { ExperienceLevel, RankedStrategy } from '@/lib/types'
 
+interface SlimContract {
+  strike: number
+  type: 'call' | 'put'
+  bid: number
+  ask: number
+  iv?: number
+}
+
 interface AnalysisResult {
   symbol: string
   underlyingPrice: number
@@ -19,6 +27,9 @@ interface AnalysisResult {
   dividendDate?: string
   dividendYield?: number
   topStrategies: RankedStrategy[]
+  callStrikes: number[]
+  putStrikes: number[]
+  contracts: SlimContract[]
 }
 
 export default function Home() {
@@ -208,6 +219,10 @@ export default function Home() {
                   underlyingPrice={result.underlyingPrice}
                   ivRank={result.ivRank}
                   experienceLevel={experienceLevel}
+                  callStrikes={result.callStrikes}
+                  putStrikes={result.putStrikes}
+                  contracts={result.contracts}
+                  selectedExpiry={selectedExpiry}
                 />
               ))
             )}

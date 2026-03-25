@@ -28,6 +28,19 @@ export async function GET(request: NextRequest) {
       topStrategies = rankStrategies(chain, signals, experienceLevel)
     }
 
+    // Build available strikes for call and put dropdowns
+    const callStrikes = [...new Set(chain.contracts.filter(c => c.type === 'call').map(c => c.strike))].sort((a, b) => a - b)
+    const putStrikes = [...new Set(chain.contracts.filter(c => c.type === 'put').map(c => c.strike))].sort((a, b) => a - b)
+
+    // Slim contracts for client-side strike recalculation (bid/ask/strike/type only)
+    const contractsSlim = chain.contracts.map(c => ({
+      strike: c.strike,
+      type: c.type,
+      bid: c.bid,
+      ask: c.ask,
+      iv: c.impliedVolatility,
+    }))
+
     return NextResponse.json({
       symbol: chain.symbol,
       underlyingPrice: chain.underlyingPrice,
@@ -39,6 +52,9 @@ export async function GET(request: NextRequest) {
       dividendYield: chain.dividendYield,
       signals,
       topStrategies,
+      callStrikes,
+      putStrikes,
+      contracts: contractsSlim,
     })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'

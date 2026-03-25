@@ -23,20 +23,35 @@ const mockStrategy: RankedStrategy = {
   netCreditDebit: 3.50,
 }
 
+const defaultProps = {
+  strategy: mockStrategy,
+  symbol: 'AAPL',
+  underlyingPrice: 175,
+  ivRank: 70,
+  experienceLevel: 'beginner' as const,
+  callStrikes: [170, 175, 180, 185, 190],
+  putStrikes: [160, 165, 170, 175, 180],
+  contracts: [
+    { strike: 185, type: 'call' as const, bid: 3.20, ask: 3.80 },
+    { strike: 180, type: 'call' as const, bid: 5.00, ask: 5.60 },
+    { strike: 190, type: 'call' as const, bid: 1.50, ask: 2.00 },
+  ],
+}
+
 describe('StrategyCard', () => {
   it('renders strategy name', () => {
-    render(<StrategyCard strategy={mockStrategy} symbol="AAPL" underlyingPrice={175} ivRank={70} experienceLevel="beginner" />)
+    render(<StrategyCard {...defaultProps} />)
     expect(screen.getByText('Covered Call')).toBeInTheDocument()
   })
 
   it('renders PoP and break-even', () => {
-    render(<StrategyCard strategy={mockStrategy} symbol="AAPL" underlyingPrice={175} ivRank={70} experienceLevel="beginner" />)
+    render(<StrategyCard {...defaultProps} />)
     expect(screen.getByText(/75\.0%/)).toBeInTheDocument()
     expect(screen.getByText(/\$170\.50/)).toBeInTheDocument()
   })
 
   it('shows error when no API key on expand click', () => {
-    render(<StrategyCard strategy={mockStrategy} symbol="AAPL" underlyingPrice={175} ivRank={70} experienceLevel="beginner" />)
+    render(<StrategyCard {...defaultProps} />)
     fireEvent.click(screen.getByText(/Why this strategy/i))
     expect(screen.getByText(/API key|Explanation unavailable|localStorage/i)).toBeInTheDocument()
   })
