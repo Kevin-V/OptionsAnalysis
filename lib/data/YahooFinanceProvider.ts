@@ -85,8 +85,23 @@ export class YahooFinanceProvider implements IOptionsDataProvider {
     const totalCallOI = contracts.filter(c => c.type === 'call').reduce((s, c) => s + c.openInterest, 0)
     const putCallRatio = totalCallOI > 0 ? totalPutOI / totalCallOI : 1
 
-    const currentIV = contracts[0]?.impliedVolatility ?? 0.3
-    const ivRank = Math.min(100, Math.round(currentIV * 200))
+    // Use ATM option IV (closest to underlying price) instead of first contract
+    const atmContract = contracts
+      .filter(c => c.type === 'call' && c.impliedVolatility > 0)
+      .sort((a, b) => Math.abs(a.strike - underlyingPrice) - Math.abs(b.strike - underlyingPrice))[0]
+    const currentIV = atmContract?.impliedVolatility ?? 0.3
+
+    // Estimate IV rank from all option IVs in the chain
+    // Use the range of IVs across strikes as a proxy for the IV range
+    const allIVs = contracts
+      .filter(c => c.impliedVolatility > 0 && Math.abs(c.strike - underlyingPrice) / underlyingPrice < 0.15)
+      .map(c => c.impliedVolatility)
+    const minIV = allIVs.length > 2 ? Math.min(...allIVs) : currentIV * 0.6
+    const maxIV = allIVs.length > 2 ? Math.max(...allIVs) : currentIV * 1.4
+    const ivRange = maxIV - minIV
+    const ivRank = ivRange > 0
+      ? Math.min(100, Math.max(0, Math.round(((currentIV - minIV) / ivRange) * 100)))
+      : 50
 
     return {
       symbol: symbol.toUpperCase(),

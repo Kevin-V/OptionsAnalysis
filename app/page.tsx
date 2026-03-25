@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { SearchBar } from '@/components/SearchBar'
 import { ExperienceToggle } from '@/components/ExperienceToggle'
 import { ExpirySelector } from '@/components/ExpirySelector'
+import { StrategyPicker } from '@/components/StrategyPicker'
 import { ChainSummary } from '@/components/ChainSummary'
 import { StrategyCard } from '@/components/StrategyCard'
 import { SettingsPanel } from '@/components/SettingsPanel'
@@ -25,6 +26,7 @@ export default function Home() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [selectedExpiry, setSelectedExpiry] = useState<string>('')
   const [currentSymbol, setCurrentSymbol] = useState<string>('')
+  const [selectedStrategy, setSelectedStrategy] = useState<string>('')
 
   useEffect(() => {
     const saved = localStorage.getItem('experienceLevel') as ExperienceLevel | null
@@ -36,15 +38,17 @@ export default function Home() {
     localStorage.setItem('experienceLevel', level)
   }
 
-  async function handleAnalyze(symbol: string, expiry?: string) {
+  async function handleAnalyze(symbol: string, expiry?: string, strategy?: string) {
     setLoading(true)
     setError(null)
     setResult(null)
     setCurrentSymbol(symbol)
 
+    const strat = strategy ?? selectedStrategy
     try {
       let url = `/api/options/chain?symbol=${encodeURIComponent(symbol)}&level=${experienceLevel}`
       if (expiry) url += `&expiry=${encodeURIComponent(expiry)}`
+      if (strat) url += `&strategy=${encodeURIComponent(strat)}`
 
       const res = await fetch(url)
       const data = await res.json()
@@ -64,7 +68,8 @@ export default function Home() {
         })
         setSelectedExpiry(best)
         // Re-fetch with the better expiry (must be an exact date from the list)
-        const reUrl = `/api/options/chain?symbol=${encodeURIComponent(symbol)}&level=${experienceLevel}&expiry=${encodeURIComponent(best)}`
+        let reUrl = `/api/options/chain?symbol=${encodeURIComponent(symbol)}&level=${experienceLevel}&expiry=${encodeURIComponent(best)}`
+        if (strat) reUrl += `&strategy=${encodeURIComponent(strat)}`
         const reRes = await fetch(reUrl)
         const reData = await reRes.json()
         if (reRes.ok) {
@@ -83,6 +88,11 @@ export default function Home() {
   function handleExpiryChange(expiry: string) {
     setSelectedExpiry(expiry)
     if (currentSymbol) handleAnalyze(currentSymbol, expiry)
+  }
+
+  function handleStrategyChange(strategyId: string) {
+    setSelectedStrategy(strategyId)
+    if (currentSymbol) handleAnalyze(currentSymbol, selectedExpiry || undefined, strategyId)
   }
 
   return (
@@ -143,17 +153,23 @@ export default function Home() {
               expiryDates={result.expiryDates}
             />
 
-            {result.expiryDates.length > 0 && (
-              <div className="mt-4">
+            <div className="mt-4 flex flex-wrap items-center gap-4">
+              {result.expiryDates.length > 0 && (
                 <ExpirySelector
                   expiryDates={result.expiryDates}
                   selected={selectedExpiry}
                   onChange={handleExpiryChange}
                 />
-              </div>
-            )}
+              )}
+              <StrategyPicker
+                selected={selectedStrategy}
+                onChange={handleStrategyChange}
+              />
+            </div>
 
-            <h2 className="mt-6 text-lg font-semibold text-gray-900">Suggested Strategies</h2>
+            <h2 className="mt-6 text-lg font-semibold text-gray-900">
+              {selectedStrategy ? 'Strategy Analysis' : 'Suggested Strategies'}
+            </h2>
             {result.topStrategies.length === 0 ? (
               <p className="text-gray-500">No matching strategies found for current market conditions.</p>
             ) : (

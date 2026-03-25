@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDataProvider } from '@/lib/data'
 import { computeSignals } from '@/lib/engine/signals'
-import { rankStrategies } from '@/lib/engine/ranker'
+import { rankStrategies, buildSingleStrategy } from '@/lib/engine/ranker'
 
 export async function GET(request: NextRequest) {
   const symbol = request.nextUrl.searchParams.get('symbol')
@@ -13,12 +13,20 @@ export async function GET(request: NextRequest) {
   const experienceLevel = (request.nextUrl.searchParams.get('level') ?? 'beginner') as
     'beginner' | 'intermediate' | 'advanced'
   const expiry = request.nextUrl.searchParams.get('expiry') ?? undefined
+  const forcedStrategy = request.nextUrl.searchParams.get('strategy') ?? undefined
 
   try {
     const provider = getDataProvider()
     const chain = await provider.getChain(symbol.toUpperCase(), expiry)
     const signals = computeSignals(chain)
-    const topStrategies = rankStrategies(chain, signals, experienceLevel)
+
+    let topStrategies
+    if (forcedStrategy) {
+      const result = buildSingleStrategy(forcedStrategy, chain, signals)
+      topStrategies = result ? [result] : []
+    } else {
+      topStrategies = rankStrategies(chain, signals, experienceLevel)
+    }
 
     return NextResponse.json({
       symbol: chain.symbol,
