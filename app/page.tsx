@@ -109,9 +109,14 @@ export default function Home() {
           <p className="mt-3 text-lg text-gray-500">
             Enter a stock ticker to get ranked options strategy suggestions with AI-powered explanations.
           </p>
-          <a href="/learn" className="mt-2 inline-block text-sm text-blue-600 hover:underline">
-            New to options? Visit the Strategy Library &rarr;
-          </a>
+          <div className="mt-2 flex gap-4 justify-center">
+            <a href="/learn" className="text-sm text-blue-600 hover:underline">
+              Strategy Library &rarr;
+            </a>
+            <a href="/glossary" className="text-sm text-blue-600 hover:underline">
+              Glossary &rarr;
+            </a>
+          </div>
         </div>
 
         <div className="mb-6 flex justify-center">
