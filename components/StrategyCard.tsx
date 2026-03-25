@@ -77,7 +77,7 @@ function calcPoP(strategyId: string, legs: StrategyLeg[], contracts: SlimContrac
     case 'covered-call':
     case 'cash-secured-put': {
       const short = legs.find(l => l.action === 'sell' && l.type !== 'stock')
-      if (!short) return 50
+      if (!short || short.type === 'stock') return 50
       const c = findContract(contracts, short.type, short.strike)
       const iv = c ? getIV(c, underlyingPrice) : 0.3
       const delta = estimateDelta(short.type, short.strike, underlyingPrice, iv, dte)
@@ -85,7 +85,7 @@ function calcPoP(strategyId: string, legs: StrategyLeg[], contracts: SlimContrac
     }
     case 'bull-put-spread': {
       const short = legs.find(l => l.action === 'sell')
-      if (!short) return 50
+      if (!short || short.type === 'stock') return 50
       const c = findContract(contracts, short.type, short.strike)
       const iv = c ? getIV(c, underlyingPrice) : 0.3
       const delta = estimateDelta(short.type, short.strike, underlyingPrice, iv, dte)
@@ -93,7 +93,7 @@ function calcPoP(strategyId: string, legs: StrategyLeg[], contracts: SlimContrac
     }
     case 'bear-call-spread': {
       const short = legs.find(l => l.action === 'sell')
-      if (!short) return 50
+      if (!short || short.type === 'stock') return 50
       const c = findContract(contracts, short.type, short.strike)
       const iv = c ? getIV(c, underlyingPrice) : 0.3
       const delta = estimateDelta(short.type, short.strike, underlyingPrice, iv, dte)
